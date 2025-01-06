@@ -83,6 +83,22 @@ def db_readCurrencyCode():
         currencies = session.exec(select(CurrencyCode)).all()
         return[{currency.code}for currency in currencies]
 
+#czytanie dostepnych kursow walut z konkretnego dnia
+def db_readRates(date:str) -> List[dict]:
+    with Session(engine) as session:
+        query = (select(Rate,CurrencyCode.code)
+                .join(CurrencyCode,Rate.CurrencyId==CurrencyCode.CurrencyId)
+                .where(Rate.effectiveDate==date))
+        results = session.exec(query).all()
+
+        return[
+            {
+                "RateId": rate.RateId,
+                "code": code,
+                "effectiveDate": rate.effectiveDate,
+                "mid": rate.mid
+            } for rate, code in results
+        ]
 
 #dodawanie rekordow do tabeli rate
 def db_writeRateFromRangeofDates(code: str,dataPoczatkowa:str,dataKoncowa:str):
