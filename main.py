@@ -1,13 +1,13 @@
-from typing import Union
+from typing import Union, Annotated
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from fastapi.middleware.cors import CORSMiddleware
 
-from dbActions import init_db
+from dbActions import init_db, db_writeRateFromRangeofDates, Rate
 
 from requests import request
-
+from datetime import date
 
 app = FastAPI()
 
@@ -35,8 +35,12 @@ init_db()
 #def read_AvailableCurrenciesFromGivenDay():
 #    return{"toBeImplemented":"2"}
 
-
 #zdobywanie kursów z bazy danych Narodowego Banku Polskiego
-@app.post("/currencies/fetch")
-def write_FeedDatabase():
-    return {"toBeImpleteneted":"3"}
+@app.post("/currencies/fetch/{code}/{startDate}/{endDate}")
+def write_FeedDatabase(code:str,startDate:str,endDate:str):
+    try:
+        db_writeRateFromRangeofDates(code,startDate,endDate)
+        return "OK"
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))
+
