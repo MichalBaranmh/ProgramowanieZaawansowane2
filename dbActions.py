@@ -77,6 +77,13 @@ def init_db():
         session.commit()
 
 
+#czytanie dostepnych walut z tabeli currencycode
+def db_readCurrencyCode():
+    with Session(engine) as session:
+        currencies = session.exec(select(CurrencyCode)).all()
+        return[{currency.code}for currency in currencies]
+
+
 #dodawanie rekordow do tabeli rate
 def db_writeRateFromRangeofDates(code: str,dataPoczatkowa:str,dataKoncowa:str):
     with Session(engine) as session:
@@ -105,7 +112,7 @@ def db_writeRateFromRangeofDates(code: str,dataPoczatkowa:str,dataKoncowa:str):
                 )
                 session.add(new_rate)
                 session.commit()
-                
+
                 new_transaction = Transaction(
                     CurrencyId=currency.CurrencyId,
                     RateId=new_rate.RateId,
@@ -117,5 +124,4 @@ def db_writeRateFromRangeofDates(code: str,dataPoczatkowa:str,dataKoncowa:str):
 
 if __name__ == "__main.py__":
     init_db()
-    db_write()
-
+    db_writeRateFromRangeofDates()

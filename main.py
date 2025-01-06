@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 
 from fastapi.middleware.cors import CORSMiddleware
 
-from dbActions import init_db, db_writeRateFromRangeofDates, Rate
+from dbActions import init_db, db_writeRateFromRangeofDates,db_readCurrencyCode
 
 from requests import request
 from datetime import date
@@ -26,10 +26,11 @@ app.add_middleware(
 init_db()
 
 #wyswietlanie walut z bazy danych
-#@app.get("/currencies")
-#def read_AvailableCurrencies():
-#    return{"toBeImplemented":"1"}
-#
+@app.get("/currencies")
+def read_AvailableCurrencies():
+    currencies = db_readCurrencyCode()
+    return currencies
+
 ##wyswietlanie kursow z bazy danych 
 #@app.get("/currencies/{date}")
 #def read_AvailableCurrenciesFromGivenDay():
