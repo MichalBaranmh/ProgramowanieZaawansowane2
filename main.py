@@ -40,9 +40,8 @@ def read_AvailableCurrenciesFromGivenDay(date:str):
 #zdobywanie kursów z bazy danych Narodowego Banku Polskiego
 @app.post("/currencies/fetch/{code}/{startDate}/{endDate}")
 def write_FeedDatabase(code:str,startDate:str,endDate:str):
-    try:
-        db_writeRateFromRangeofDates(code,startDate,endDate)
-        return "OK"
-    except Exception as e:
-        raise HTTPException(status_code=500,detail=str(e))
+    codeUpper = code.upper()
+    db_writeRateFromRangeofDates(codeUpper,startDate,endDate)
+    
+
 

@@ -3,7 +3,7 @@ from datetime import date
 import requests
 from sqlalchemy import URL
 from sqlmodel import Field, SQLModel, create_engine, Session, Relationship, select
-from fastapi import status
+from fastapi import HTTPException, status
 
 #tworzenie connectionstringa dla polaczenia z DB
 db_url = URL.create(
@@ -103,16 +103,12 @@ def db_readRates(date:str) -> List[dict]:
 #dodawanie rekordow do tabeli rate
 def db_writeRateFromRangeofDates(code: str,dataPoczatkowa:str,dataKoncowa:str):
     with Session(engine) as session:
-        currency = session.exec(select(CurrencyCode).where(CurrencyCode.code==code)).first()
+        currency = session.exec(select(CurrencyCode).where(CurrencyCode.code == code)).first()
         if not currency:
-            return status.HTTP_404_NOT_FOUND
+            raise HTTPException(status_code=404,detail="Currency code is not valid")
         
         r = requests.get(f"https://api.nbp.pl/api/exchangerates/rates/A/{code}/{dataPoczatkowa}/{dataKoncowa}/?format=json")
         content = r.json()
-
-        if "rates" not in content:
-            print("No rates found in the response.")
-            return status.HTTP_404_NOT_FOUND
         
         for rate_data in content["rates"]:
             rate_date = rate_data["effectiveDate"]
