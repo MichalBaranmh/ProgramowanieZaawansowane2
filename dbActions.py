@@ -4,19 +4,20 @@ import requests
 from sqlalchemy import URL
 from sqlmodel import Field, SQLModel, create_engine, Session, Relationship, select
 from fastapi import HTTPException, status
+import os
 
 #tworzenie connectionstringa dla polaczenia z DB
-db_url = URL.create(
-    "postgresql",
-    username="postgres",
-    password="postgres",
-    host="postgres",
-    database="postgres",
-    port=5432,
-)
+#db_url = URL.create(
+#    "postgresql",
+#    username="postgres",
+#    password="postgres",
+#    host="postgres",
+#    database="postgres",
+#    port=5432,
+#)
 
-DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/postgres"
-
+#DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/postgres"
+DATABASE_URL = os.getenv("DATABASE_URL","postgresql://postgres:postgres@localhost:5432/postgres")
 #domyslny wsad z walutami
 currency_codes =[
     {"code":"USD"},
@@ -99,6 +100,74 @@ def db_readRates(date:str) -> List[dict]:
                 "mid": rate.mid
             } for rate, code in results
         ]
+
+#czytanie dostępnych kursów z zakresu dat
+def db_readRatesFromRange(startDate:str,endDate:str) -> List[dict]:
+    with Session(engine) as session:
+        query = (select(Rate,CurrencyCode.code)
+                .join(CurrencyCode,Rate.CurrencyId==CurrencyCode.CurrencyId)
+                .where(Rate.effectiveDate>=startDate,Rate.effectiveDate<=endDate))
+        results = session.exec(query).all()
+
+        return[
+            {
+                "RateId": rate.RateId,
+                "code": code,
+                "effectiveDate": rate.effectiveDate,
+                "mid": rate.mid
+            } for rate, code in results
+        ]
+
+#czytanie dostępnych kursów z podanego roku
+def db_readRatesFromYear(year:int) -> List[dict]:
+    with Session(engine) as session:
+        query = (select(Rate,CurrencyCode.code)
+                .join(CurrencyCode,Rate.CurrencyId==CurrencyCode.CurrencyId)
+                .where(Rate.effectiveDate>=f"{year}-01-01",Rate.effectiveDate<=f"{year}-12-31"))
+        results = session.exec(query).all()
+
+        return[
+            {
+                "RateId": rate.RateId,
+                "code": code,
+                "effectiveDate": rate.effectiveDate,
+                "mid": rate.mid
+            } for rate, code in results
+        ]
+
+#czytanie dostępnych kursów z podanego kwartału
+def db_readRatesFromQuarter(year:int,quarter:int) -> List[dict]:
+    with Session(engine) as session:
+        if quarter == 1:
+            query = (select(Rate,CurrencyCode.code)
+                    .join(CurrencyCode,Rate.CurrencyId==CurrencyCode.CurrencyId)
+                    .where(Rate.effectiveDate>=f"{year}-01-01",Rate.effectiveDate<=f"{year}-03-31"))
+        elif quarter == 2:
+            query = (select(Rate,CurrencyCode.code)
+                    .join(CurrencyCode,Rate.CurrencyId==CurrencyCode.CurrencyId)
+                    .where(Rate.effectiveDate>=f"{year}-04-01",Rate.effectiveDate<=f"{year}-06-30"))
+        elif quarter == 3:
+            query = (select(Rate,CurrencyCode.code)
+                    .join(CurrencyCode,Rate.CurrencyId==CurrencyCode.CurrencyId)
+                    .where(Rate.effectiveDate>=f"{year}-07-01",Rate.effectiveDate<=f"{year}-09-30"))
+        elif quarter == 4:
+            query = (select(Rate,CurrencyCode.code)
+                    .join(CurrencyCode,Rate.CurrencyId==CurrencyCode.CurrencyId)
+                    .where(Rate.effectiveDate>=f"{year}-10-01",Rate.effectiveDate<=f"{year}-12-31"))
+        else:
+            raise HTTPException(status_code=404,detail="Quarter is not valid")
+        
+        results = session.exec(query).all()
+
+        return[
+            {
+                "RateId": rate.RateId,
+                "code": code,
+                "effectiveDate": rate.effectiveDate,
+                "mid": rate.mid
+            } for rate, code in results
+        ]
+
 
 #dodawanie rekordow do tabeli rate
 def db_writeRateFromRangeofDates(code: str,dataPoczatkowa:str,dataKoncowa:str):
